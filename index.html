@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#071626" />
+<title>Projectile Motion Lab | Interactive Physics</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #071626;
+    --panel: #101f32;
+    --panel2: #14263a;
+    --border: #2b4056;
+    --text: #edf5ff;
+    --muted: #a7bbce;
+    --cyan: #49d8e7;
+    --blue: #6faaff;
+    --gold: #ffcd79;
+    --green: #78e3ad;
+    --red: #ff9b9b;
+    --shadow: 0 16px 42px rgba(0, 0, 0, .23);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(ellipse at 12% -6%,#15344a 0, transparent 46%),var(--bg); color:var(--text); font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  button, input, select { font:inherit; }
+  button, input[type=range], select { touch-action: manipulation; }
+  button { cursor:pointer; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .sr-only { position:absolute!important; width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+  .shell { max-width:1380px; padding:24px clamp(14px,2.7vw,38px) 70px; margin:auto; }
+  header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding-bottom:26px; }
+  .eyebrow { font-size:.73rem; letter-spacing:.18em; text-transform:uppercase; font-weight:800; color:var(--cyan); }
+  h1 { margin:5px 0 3px; font-size:clamp(2rem,4.3vw,3.8rem); letter-spacing:-.055em; line-height:1.11; }
+  .subtitle { margin:9px 0 0; color:var(--muted); max-width:760px; font-size:1rem; }
+  .tag { border:1px solid #385168; border-radius:999px; padding:7px 12px; background:#183249; font-size:.74rem; font-weight:750; letter-spacing:.05em; white-space:nowrap; color:#cbecf2; }
+  .layout { display:grid; grid-template-columns:minmax(0,1.72fr) minmax(315px,.88fr); gap:18px; align-items:start; }
+  .panel { min-width:0; border:1px solid var(--border); border-radius:20px; background:linear-gradient(160deg,rgba(23,44,63,.96),rgba(12,28,46,.99)); box-shadow:var(--shadow); }
+  .main-panel { overflow:hidden; }
+  .panel-header { display:flex; gap:12px; justify-content:space-between; align-items:center; padding:20px 22px 5px; flex-wrap:wrap; }
+  h2 { margin:0; font-size:1.12rem; letter-spacing:-.02em; }
+  h3 { margin:0; font-size:1rem; }
+  .small { color:var(--muted); font-size:.83rem; }
+  .legend { display:flex; flex-wrap:wrap; gap:13px; font-size:.79rem; color:var(--muted); }
+  .legend span { display:inline-flex; gap:6px; align-items:center; }
+  .legend i { display:inline-block; width:18px; height:4px; border-radius:2px; }
+  .legend .predicted { border-top:3px dashed var(--blue); height:0; }
+  .legend .traveled { background:var(--cyan); }
+  .legend .apex { background:var(--gold); }
+  .graph-wrap { padding:8px 14px 4px; }
+  svg { display:block; width:100%; overflow:visible; }
+  #trajectorySvg { border:1px solid #304b64; border-radius:13px; background:linear-gradient(180deg,#0b233c 0%,#0a2035 78%,#12293a 100%); }
+  .axis-text { fill:#a4bbca; font: 13px system-ui, sans-serif; }
+  .plot-title { fill:#e3f3fa; font:bold 13px system-ui,sans-serif; }
+  .annotation { fill:#f7d798; font: 14px system-ui,sans-serif; paint-order:stroke;stroke:#0d2336;stroke-width:5px;stroke-linejoin:round; }
+  .legend-inside { fill:#d0e4f1; font: 13px system-ui,sans-serif; paint-order:stroke;stroke:#0b2338;stroke-width:4px;stroke-linejoin:round; }
+  .mini-area { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:4px 17px 19px; }
+  .mini-card { background:#0c2136; border:1px solid #2a4159; border-radius:14px; padding:11px 13px 7px; }
+  .mini-card h3 { display:flex; justify-content:space-between; align-items:center; font-size:.88rem; }
+  .mini-card h3 span { color:var(--muted); font-size:.76rem; font-weight:500; }
+  .mini-card svg { margin-top:7px; height:auto; }
+  .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:16px 0; }
+  .metric { background:#11263a; border:1px solid #30455a; border-radius:14px; padding:15px 16px; }
+  .metric-label { color:var(--muted); font-size:.75rem; font-weight:650; }
+  .metric-value { font-size:clamp(1.12rem,2.3vw,1.55rem); line-height:1.25; font-weight:850; font-variant-numeric:tabular-nums; margin-top:6px; letter-spacing:-.025em; }
+  .metric-value small { color:var(--muted); font-size:.72em; font-weight:550; }
+  .metric:first-child .metric-value { color:var(--cyan); }
+  .metric:nth-child(2) .metric-value { color:var(--gold); }
+  .metric:nth-child(3) .metric-value { color:var(--blue); }
+  .sidebar { padding:19px; }
+  .sidebar > h2 { margin-bottom:4px; }
+  .sidebar .subtext { margin:0 0 15px; font-size:.8rem; color:var(--muted); }
+  .control { margin-bottom:19px; }
+  .control label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; font-size:.91rem; font-weight:650; }
+  .control output { color:var(--cyan); font-weight:850; font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; margin:0; height:28px; background:transparent; accent-color:var(--cyan); cursor:pointer; }
+  .ends { display:flex; justify-content:space-between; font-size:.72rem; color:#91aec3; line-height:1; }
+  .divider { height:1px; background:#2c4359; margin:19px 0; }
+  .controls-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .btn { min-height:43px; border:1px solid #46647e; color:#ebf6ff; border-radius:10px; background:#1e3852; padding:8px 12px; font-size:.88rem; font-weight:750; }
+  .btn:hover:not(:disabled) { background:#2a4b66; }
+  .btn.primary { background:var(--cyan); color:#072135; border-color:var(--cyan); }
+  .btn.primary:hover:not(:disabled) { background:#91f4f9; }
+  .btn:disabled { cursor:not-allowed; opacity:.42; }
+  .timeline { margin-top:18px; }
+  .timeline .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; font-size:.79rem; color:var(--muted); }
+  .timeline strong { color:var(--text); font-variant-numeric:tabular-nums; }
+  .speed-line { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:11px; color:var(--muted); font-size:.81rem; }
+  select { padding:7px 10px; border-radius:8px; background:#102a42; border:1px solid #49657e; color:white; }
+  .status { display:flex; gap:9px; align-items:center; margin-top:13px; color:var(--muted); font-size:.78rem; }
+  .dot { width:7px; height:7px; border-radius:100%; background:var(--gold); }
+  .current-pos { margin-top:17px; padding:13px 15px; border:1px solid #3a5065; border-radius:12px; background:#0b2034; }
+  .current-pos h3 { font-size:.83rem; margin-bottom:8px; }
+  .pos-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px 12px; color:var(--muted); font-size:.77rem; }
+  .pos-grid strong { display:block; font-size:1.04rem; color:white; font-variant-numeric:tabular-nums; }
+  .below { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:17px; margin-top:18px; }
+  .info-panel,.quiz-panel { padding:20px 22px; }
+  .info-panel p { color:var(--muted); font-size:.88rem; margin:8px 0 15px; }
+  .formula { margin:10px 0; padding:12px 14px; border-radius:10px; border:1px solid #324960; background:#0b2033; font-size:clamp(.88rem,1.6vw,1rem); overflow-wrap:anywhere; }
+  .formula strong { color:var(--cyan); }
+  .formula .explain { display:block; margin-top:5px; color:var(--muted); font-size:.78rem; }
+  .assumptions { margin-top:16px; padding-top:13px; border-top:1px solid #2c4258; color:var(--muted); font-size:.83rem; }
+  .assumptions strong { color:var(--text); }
+  .assumptions ul { padding-left:20px; margin:8px 0 0; }
+  .quiz-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .score { border-radius:20px; border:1px solid #3e596f; padding:5px 12px; background:#193149; color:#bbd9eb; font-weight:700; font-size:.8rem; }
+  .quiz-note { color:var(--muted); font-size:.83rem; margin:7px 0 15px; }
+  .question { margin:13px 0; border:1px solid #32475c; background:#0d2337; border-radius:12px; padding:13px; }
+  .question fieldset { border:0; padding:0; margin:0; min-width:0; }
+  .question legend, .question .q-title { font-weight:750; font-size:.88rem; line-height:1.4; padding:0; width:100%; }
+  .q-sub { color:var(--muted); font-size:.75rem; margin:3px 0 9px; }
+  .radio-set { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
+  .radio-set label { display:inline-flex; align-items:center; gap:6px; font-size:.79rem; border:1px solid #3a536b; padding:8px 9px; border-radius:9px; background:#152d45; cursor:pointer; }
+  .radio-set label:has(input:checked) { border-color:var(--cyan); background:#143e4c; }
+  .radio-set input { accent-color:var(--cyan); }
+  .question button { border:1px solid #52748e; background:#1a3952; color:#f0f9ff; border-radius:8px; padding:7px 12px; font-size:.8rem; font-weight:700; min-height:36px; }
+  .question button:hover { background:#27506c; }
+  .feedback { padding:9px 11px; border-radius:9px; margin-top:10px; font-size:.79rem; }
+  .feedback.good { color:#bcf5d9; background:#133e34; border:1px solid #296957; }
+  .feedback.bad { color:#ffe2c5; background:#48301f; border:1px solid #80613a; }
+  .numeric-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:9px; }
+  .numeric-row input { flex:1 1 115px; min-width:0; max-width:240px; color:white; border:1px solid #526b83; background:#142e45; border-radius:8px; padding:8px 10px; }
+  .unit { align-self:center; color:var(--muted); font-size:.86rem; }
+  .footer-note { text-align:center; margin:23px 0 0; font-size:.78rem; color:#91aabd; }
+  @media (max-width:1100px) { .layout { grid-template-columns:minmax(0,1fr) minmax(275px,.78fr); } .below { grid-template-columns:1fr; } }
+  @media (max-width:760px) { .shell { padding-top:16px; } header { padding-bottom:18px; } .layout { grid-template-columns:1fr; } .metrics { grid-template-columns:1fr 1fr; } .metric { padding:12px 13px; } .main-panel .panel-header { padding:16px 15px 7px; } .legend { gap:9px; } .graph-wrap { padding:8px 8px 5px; } .mini-area { gap:7px; padding:0 9px 12px; } .mini-card { padding:7px 7px 3px; } .mini-card h3 { font-size:.78rem; } .mini-card h3 span { font-size:.67rem; } .sidebar, .info-panel, .quiz-panel { padding:16px; } }
+  @media (max-width:390px) { .mini-area { grid-template-columns:1fr; } .metric-value { font-size:1.14rem; } .tag { white-space:normal; } }
+  @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header>
+    <div>
+      <div class="eyebrow">Physics Lab / 02 &nbsp;·&nbsp; Explore by experimenting</div>
+      <h1>Projectile Motion<span style="color:var(--cyan)">.</span></h1>
+      <p class="subtitle">Launch a projectile, see its position evolve with time, and test how speed, angle, and gravity change its flight.</p>
+    </div>
+    <div class="tag">2D SIMULATION · NO AIR RESISTANCE</div>
+  </header>
+  <section class="layout" aria-label="Simulation and controls">
+    <div>
+      <article class="panel main-panel" aria-labelledby="trajectoryTitle">
+        <div class="panel-header">
+          <div><h2 id="trajectoryTitle">Flight trajectory</h2><div class="small">Launch and landing are at the same height</div></div>
+          <div class="legend" aria-label="Chart legend"><span><i class="predicted"></i> Predicted path</span><span><i class="traveled"></i> Traveled</span><span><i class="apex"></i> Peak</span></div>
+        </div>
+        <div class="graph-wrap">
+          <svg id="trajectorySvg" viewBox="0 0 840 455" role="img" aria-label="Projectile trajectory with current projectile position, maximum height, and predicted landing point">
+            <title>Projectile flight in meters</title>
+            <desc>The light-blue dashed curve shows the complete predicted trajectory. The turquoise curve shows the completed portion. The moving projectile and the landing marker update when controls change.</desc>
+            <defs>
+              <radialGradient id="ballGlow"><stop offset="0%" stop-color="#c4ffff"/><stop offset="65%" stop-color="#49d8e7"/><stop offset="100%" stop-color="#1186aa"/></radialGradient>
+              <filter id="ballShadow" x="-130%" y="-130%" width="360%" height="360%"><feGaussianBlur stdDeviation="6"/></filter>
+            </defs>
+            <g id="plotGrid"></g>
+            <path id="fullArc" fill="none" stroke="#78b9ff" stroke-width="3" stroke-dasharray="8 9" opacity=".8" />
+            <path id="traveledArc" fill="none" stroke="#49d8e7" stroke-width="5" stroke-linecap="round" />
+            <line id="verticalGuide" stroke="#7da7bb" stroke-width="2" stroke-dasharray="5 7" opacity=".7" />
+            <line id="heightGuide" stroke="#ffcd79" stroke-width="2" stroke-dasharray="4 7" opacity=".75" />
+            <g id="apexMark"><circle id="apexDot" r="5" fill="#ffcd79"/><text id="apexLabel" class="annotation">Peak</text></g>
+            <g id="landingMark"><circle id="landingRing" r="9" stroke="#95baff" fill="#122c45" stroke-width="3"/><circle id="landingDot" r="3" fill="#95baff"/><text id="landingLabel" class="legend-inside">Predicted landing</text></g>
+            <circle id="ballHalo" r="17" fill="#49d8e7" opacity=".17" filter="url(#ballShadow)" />
+            <circle id="ball" r="9" fill="url(#ballGlow)" stroke="#fff" stroke-width="2" />
+            <text id="ballLabel" class="legend-inside">(0.0 m, 0.0 m)</text>
+          </svg>
+        </div>
+        <div class="mini-area">
+          <div class="mini-card"><h3>Horizontal position <span>x(t) · meters</span></h3><svg id="xTimeSvg" viewBox="0 0 390 166" role="img" aria-label="Horizontal position versus time graph"><title>Horizontal position x versus time</title></svg></div>
+          <div class="mini-card"><h3>Vertical position <span>y(t) · meters</span></h3><svg id="yTimeSvg" viewBox="0 0 390 166" role="img" aria-label="Vertical position versus time graph"><title>Vertical position y versus time</title></svg></div>
+        </div>
+      </article>
+      <div class="metrics" aria-label="Predicted flight metrics">
+        <article class="metric"><div class="metric-label">Total flight time</div><div class="metric-value" id="timeMetric">2.88 <small>s</small></div></article>
+        <article class="metric"><div class="metric-label">Maximum height</div><div class="metric-value" id="heightMetric">10.19 <small>m</small></div></article>
+        <article class="metric"><div class="metric-label">Predicted range</div><div class="metric-value" id="rangeMetric">40.77 <small>m</small></div></article>
+        <article class="metric"><div class="metric-label">Height right now</div><div class="metric-value" id="currentHeightMetric">0.00 <small>m</small></div></article>
+      </div>
+    </div>
+    <aside class="panel sidebar" aria-labelledby="controlsTitle">
+      <h2 id="controlsTitle">Experiment controls</h2>
+      <p class="subtext">Change a variable and observe the new prediction. The animation restarts at launch.</p>
+      <div class="control"><label for="speedRange">Initial speed <output for="speedRange" id="speedOutput">20.0 m/s</output></label><input id="speedRange" type="range" min="5" max="40" step="0.5" value="20" /><div class="ends"><span>5 m/s</span><span>40 m/s</span></div></div>
+      <div class="control"><label for="angleRange">Launch angle <output for="angleRange" id="angleOutput">45°</output></label><input id="angleRange" type="range" min="5" max="85" step="1" value="45" /><div class="ends"><span>5°</span><span>85°</span></div></div>
+      <div class="control"><label for="gravityRange">Gravity <output for="gravityRange" id="gravityOutput">9.81 m/s²</output></label><input id="gravityRange" type="range" min="1" max="20" step="0.01" value="9.81" /><div class="ends"><span>1 m/s²</span><span>20 m/s²</span></div></div>
+      <div class="divider"></div>
+      <h3 style="margin-bottom:11px">Playback</h3>
+      <div class="controls-row">
+        <button type="button" class="btn primary" id="playBtn">▶ Play</button>
+        <button type="button" class="btn" id="pauseBtn" disabled>Ⅱ Pause</button>
+        <button type="button" class="btn" id="restartBtn">↺ Restart</button>
+        <button type="button" class="btn" id="stepBtn">⇥ Step +0.10 s</button>
+      </div>
+      <div class="timeline"><label class="top" for="timeRange"><span>Simulation time</span><strong id="timeNow">0.00 / 2.88 s</strong></label><input type="range" id="timeRange" min="0" max="2.883208" value="0" step="0.001" aria-label="Scrub simulation time" /><div class="ends"><span>Launch</span><span>Landing</span></div></div>
+      <div class="speed-line"><label for="playbackSpeed">Playback speed</label><select id="playbackSpeed"><option value="0.5">0.5×</option><option value="1" selected>1× real time</option><option value="2">2×</option><option value="4">4×</option></select></div>
+      <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Ready at launch. Press Play or Step.</span></div>
+      <div class="current-pos" aria-label="Instantaneous motion values">
+        <h3>At the current instant</h3>
+        <div class="pos-grid"><div>Position x<strong id="xNow">0.00 m</strong></div><div>Position y<strong id="yNow">0.00 m</strong></div><div>Velocity vₓ<strong id="vxNow">14.14 m/s</strong></div><div>Velocity vᵧ<strong id="vyNow">14.14 m/s</strong></div></div>
+      </div>
+    </aside>
+  </section>
+  <section class="below" aria-label="Physics explanations and comprehension questions">
+    <article class="panel info-panel">
+      <h2>What equations drive the simulation?</h2>
+      <p>Motion is horizontal at constant velocity, while gravity changes the vertical velocity. Both positions are calculated from the <strong>same time t</strong>.</p>
+      <div class="formula"><strong>Horizontal:</strong> x(t) = v₀ cos(θ) · t<span class="explain">Horizontal acceleration is zero. Position x is measured in meters (m).</span></div>
+      <div class="formula"><strong>Vertical:</strong> y(t) = v₀ sin(θ) · t − ½gt²<span class="explain">Up is positive; gravitational acceleration is −g. Height y is in meters (m).</span></div>
+      <div class="formula"><strong>Flight time:</strong> T = 2v₀ sin(θ) / g<br><strong>Maximum height:</strong> H = [v₀ sin(θ)]² / (2g)<br><strong>Range:</strong> R = (v₀² sin(2θ)) / g<span class="explain">The flight-time and range formulas assume the projectile lands at the same height from which it launched.</span></div>
+      <div class="assumptions"><strong>Model assumptions and units</strong><ul><li>Launch from (0 m, 0 m); landing at y = 0 m on level ground.</li><li>No air resistance, wind, thrust, or Earth curvature; point-mass projectile.</li><li>Initial speed v₀ in m/s; angle θ in degrees above the horizontal; gravity magnitude g in m/s².</li><li>For all simulation times: 0 ≤ t ≤ T; positions are in meters and time is in seconds.</li></ul></div>
+    </article>
+    <article class="panel quiz-panel" aria-labelledby="quizTitle">
+      <div class="quiz-head"><h2 id="quizTitle">Check your predictions</h2><span id="quizScore" class="score">0 / 3 correct</span></div>
+      <p class="quiz-note">Answer all three questions. Each provides immediate feedback and an explanation. Adjusting parameters clears previous answers.</p>
+      <div class="question" id="q1"><fieldset><legend>1. At the highest point, what is the projectile's vertical velocity?</legend><div class="radio-set"><label><input type="radio" name="q1" value="positive" /> Positive</label><label><input type="radio" name="q1" value="zero" /> Zero</label><label><input type="radio" name="q1" value="negative" /> Negative</label></div></fieldset><button id="checkQ1" type="button">Check answer</button><div id="feedbackQ1" class="feedback" role="status" aria-live="polite" hidden></div></div>
+      <div class="question" id="q2"><fieldset><legend>2. If gravity doubles while speed and angle stay fixed, what happens to the range?</legend><div class="radio-set"><label><input type="radio" name="q2" value="half" /> It halves</label><label><input type="radio" name="q2" value="double" /> It doubles</label><label><input type="radio" name="q2" value="same" /> No change</label></div></fieldset><button id="checkQ2" type="button">Check answer</button><div id="feedbackQ2" class="feedback" role="status" aria-live="polite" hidden></div></div>
+      <div class="question" id="q3"><div class="q-title"><label for="rangeGuess">3. Predict the horizontal landing position for the current settings.</label></div><div class="q-sub">Enter your answer in meters; round to two decimal places.</div><div class="numeric-row"><input id="rangeGuess" type="number" step="any" inputmode="decimal" placeholder="Your prediction" /><span class="unit">m</span><button id="checkQ3" type="button">Check answer</button></div><div id="feedbackQ3" class="feedback" role="status" aria-live="polite" hidden></div></div>
+      <button id="resetQuiz" type="button" class="btn" style="margin-top:2px">Clear all answers</button>
+    </article>
+  </section>
+  <p class="footer-note">Standalone teaching resource · No login, external libraries, or network requests · Works with mouse, touch, and keyboard.</p>
+  <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const STEP = 0.10;
+  const START = Object.freeze({speed:20, angle:45, gravity:9.81});
+  let params = {...START};
+  let values, elapsed = 0, running = false, lastFrame = null, animationId = null;
+  let answers = {q1:null,q2:null,q3:null};
+  const speedRange = $('speedRange'), angleRange = $('angleRange'), gravityRange = $('gravityRange');
+
+  function compute(p) {
+    const rad = p.angle * Math.PI / 180;
+    const vx = p.speed * Math.cos(rad), vy = p.speed * Math.sin(rad);
+    const T = 2*vy/p.gravity;
+    const H = vy*vy/(2*p.gravity);
+    const R = vx*T; // Equivalent to v0^2 sin(2theta)/g, avoids discrepancies.
+    return {vx,vy,T,H,R};
+  }
+  function position(t) {
+    const time = Math.max(0,Math.min(values.T,t));
+    const x = values.vx*time;
+    // Ensure both endpoints are exactly on the ground in floating-point calculations.
+    const y = (time === 0 || time === values.T) ? 0 : Math.max(0, values.vy*time-0.5*params.gravity*time*time);
+    return {x,y,vx:values.vx,vy:values.vy-params.gravity*time};
+  }
+  function fmt(x,d=2) { return (Math.abs(x) < Math.pow(10,-d)/2 ? 0 : x).toFixed(d); }
+  function svgEl(tag, attrs={}, text) {
+    const el=document.createElementNS(NS,tag);
+    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,String(v));
+    if (text !== undefined) el.textContent=text;
+    return el;
+  }
+  function line(parent,x1,y1,x2,y2,stroke='#284961',width=1,extra={}) { parent.appendChild(svgEl('line',{x1,y1,x2,y2,stroke,'stroke-width':width,...extra})); }
+  function text(parent,x,y,value,extra={}) { parent.appendChild(svgEl('text',{x,y,class:'axis-text',...extra},value)); }
+  function niceStep(raw) {
+    if (!isFinite(raw)||raw<=0) return 1;
+    const pow=Math.pow(10,Math.floor(Math.log10(raw)));
+    const n=raw/pow;
+    return (n<=1?1:n<=2?2:n<=5?5:10)*pow;
+  }
+  function drawMain() {
+    const grid=$('plotGrid');grid.replaceChildren();
+    const W=840, H=455, left=63,right=811,top=24,ground=398;
+    const pw=right-left, ph=ground-top;
+    const s=Math.min(pw/Math.max(values.R*1.12,7),ph/Math.max(values.H*1.45,5));
+    const maxX=pw/s, maxY=ph/s;
+    const px=x=>left+x*s, py=y=>ground-y*s;
+    const xStep=niceStep(maxX/8),yStep=niceStep(maxY/6);
+    for(let x=0;x<=maxX+1e-9;x+=xStep) {const xx=px(x);line(grid,xx,top,xx,ground,'#25455b',1);text(grid,xx,ground+22,fmt(x,xStep<1?1:0),{'text-anchor':'middle'});}
+    for(let y=0;y<=maxY+1e-9;y+=yStep) {const yy=py(y);line(grid,left,yy,right,yy,'#25455b',1);text(grid,left-11,yy+5,fmt(y,yStep<1?1:0),{'text-anchor':'end'});}
+    line(grid,left,top,left,ground,'#adc2d5',2);line(grid,left,ground,right,ground,'#adc2d5',2);
+    text(grid,right,ground+39,'Horizontal distance x (m)',{'text-anchor':'end'});
+    text(grid,18,top-6,'Height y (m)');
+    function arc(endT,n) {let d=''; for(let i=0;i<=n;i++) {const p=position(endT*i/n);d+=(i?' L':'M')+px(p.x).toFixed(3)+' '+py(p.y).toFixed(3);} return d;}
+    $('fullArc').setAttribute('d',arc(values.T,140));
+    $('traveledArc').setAttribute('d',arc(elapsed,Math.max(1,Math.ceil(140*elapsed/values.T))));
+    const p=position(elapsed), bx=px(p.x), by=py(p.y);
+    $('verticalGuide').setAttribute('x1',bx);$('verticalGuide').setAttribute('x2',bx);$('verticalGuide').setAttribute('y1',by);$('verticalGuide').setAttribute('y2',ground);
+    const ax=px(values.R/2), ay=py(values.H);
+    $('heightGuide').setAttribute('x1',left);$('heightGuide').setAttribute('x2',ax);$('heightGuide').setAttribute('y1',ay);$('heightGuide').setAttribute('y2',ay);
+    $('apexDot').setAttribute('cx',ax);$('apexDot').setAttribute('cy',ay);
+    $('apexLabel').setAttribute('x',Math.min(right-12,ax+10));$('apexLabel').setAttribute('y',ay-14);
+    $('apexLabel').textContent='Peak: '+fmt(values.H)+' m';
+    const lx=px(values.R);
+    for(const id of ['landingRing','landingDot']) {$ (id).setAttribute('cx',lx);$(id).setAttribute('cy',ground);}
+    $('landingLabel').setAttribute('x',lx-6);$('landingLabel').setAttribute('y',ground-17);$('landingLabel').setAttribute('text-anchor','end');
+    $('landingLabel').textContent='Landing: '+fmt(values.R)+' m';
+    $('ball').setAttribute('cx',bx);$('ball').setAttribute('cy',by);$('ballHalo').setAttribute('cx',bx);$('ballHalo').setAttribute('cy',by);
+    let labelX=bx+14;
+    if(labelX>right-145) labelX=bx-14;
+    const labelAnchor=labelX<bx?'end':'start';
+    $('ballLabel').setAttribute('x',labelX);$('ballLabel').setAttribute('y',Math.max(top+16,by-18));$('ballLabel').setAttribute('text-anchor',labelAnchor);
+    $('ballLabel').textContent='('+fmt(p.x)+' m, '+fmt(p.y)+' m)';
+  }
+  function drawTimeGraph(id,kind) {
+    const el=$(id);el.replaceChildren();
+    const left=36,right=375,top=15,bottom=140,w=right-left,h=bottom-top;
+    const maxVal=(kind==='x' ? values.R : values.H);
+    const maxY=Math.max(0.5,maxVal*1.18);
+    const xp=t=>left+(t/values.T)*w, yp=v=>bottom-(v/maxY)*h;
+    for(let i=0;i<=4;i++) {const x=left+w*i/4;line(el,x,top,x,bottom,'#233e56',1);text(el,x,bottom+17,fmt(values.T*i/4,1),{'text-anchor':'middle','font-size':'12'});}
+    for(let i=0;i<=3;i++) {const y=bottom-h*i/3;line(el,left,y,right,y,'#233e56',1);text(el,left-8,y+4,fmt(maxY*i/3,1),{'text-anchor':'end'});}
+    line(el,left,top,left,bottom,'#94adbf',1.6);line(el,left,bottom,right,bottom,'#94adbf',1.6);
+    const pval=t=>{const p=position(t);return kind==='x'?p.x:p.y;};
+    function d(end,n) {let s='';for(let i=0;i<=n;i++){const t=end*i/n;s+=(i?'L':'M')+xp(t).toFixed(2)+' '+yp(pval(t)).toFixed(2)+' ';}return s;}
+    el.appendChild(svgEl('path',{d:d(values.T,100),fill:'none',stroke:'#547ca8','stroke-width':2,'stroke-dasharray':'5 5'}));
+    el.appendChild(svgEl('path',{d:d(elapsed,Math.max(1,Math.ceil(100*elapsed/values.T))),fill:'none',stroke:kind==='x'?'#49d8e7':'#ffcd79','stroke-width':3.5,'stroke-linecap':'round'}));
+    const x=xp(elapsed), y=yp(pval(elapsed));
+    line(el,x,top,x,bottom,'#8cb0c8',1.2,{'stroke-dasharray':'3 5'});
+    el.appendChild(svgEl('circle',{cx:x,cy:y,r:5.5,fill:kind==='x'?'#49d8e7':'#ffcd79',stroke:'#ffffff','stroke-width':1.8}));
+    text(el,right,bottom+28,'t (s)',{'text-anchor':'end'});
+  }
+  function status(message,kind='ready') {
+    $('statusText').textContent=message;
+    $('statusDot').style.background=kind==='play'?'#78e3ad':kind==='land'?'#6faaff':'#ffcd79';
+  }
+  function render() {
+    const p=position(elapsed);
+    $('timeMetric').innerHTML=fmt(values.T)+' <small>s</small>';
+    $('heightMetric').innerHTML=fmt(values.H)+' <small>m</small>';
+    $('rangeMetric').innerHTML=fmt(values.R)+' <small>m</small>';
+    $('currentHeightMetric').innerHTML=fmt(p.y)+' <small>m</small>';
+    $('timeNow').textContent=fmt(elapsed)+' / '+fmt(values.T)+' s';
+    $('xNow').textContent=fmt(p.x)+' m';$('yNow').textContent=fmt(p.y)+' m';
+    $('vxNow').textContent=fmt(p.vx)+' m/s';$('vyNow').textContent=fmt(p.vy)+' m/s';
+    $('timeRange').max=String(values.T);$('timeRange').value=String(elapsed);
+    $('timeRange').setAttribute('aria-valuetext',fmt(elapsed)+' seconds of '+fmt(values.T)+' seconds');
+    $('playBtn').disabled=running;$('pauseBtn').disabled=!running;$('stepBtn').disabled=running || elapsed>=values.T;
+    drawMain();drawTimeGraph('xTimeSvg','x');drawTimeGraph('yTimeSvg','y');
+  }
+  function pause(silent=false) {
+    running=false;lastFrame=null;
+    if(animationId!==null) {cancelAnimationFrame(animationId); animationId=null;}
+    if(!silent) status('Paused at t = '+fmt(elapsed)+' s.');
+    render();
+  }
+  function tick(stamp) {
+    if(!running) return;
+    if(lastFrame===null)lastFrame=stamp;
+    const dt=Math.min(.1,Math.max(0,(stamp-lastFrame)/1000)); // cap large jumps after inactive tabs
+    lastFrame=stamp;
+    elapsed=Math.min(values.T,elapsed+dt*Number($('playbackSpeed').value));
+    if(elapsed>=values.T) {elapsed=values.T;running=false;lastFrame=null;animationId=null;status('Landed at x = '+fmt(values.R)+' m.','land');render();$('announcer').textContent='Projectile landed after '+fmt(values.T)+' seconds at '+fmt(values.R)+' meters.';return;}
+    render();animationId=requestAnimationFrame(tick);
+  }
+  function play() {
+    if(running) return;
+    if(elapsed>=values.T)elapsed=0;
+    running=true;lastFrame=null;
+    status('In flight — pause or adjust the time slider.','play');
+    render();animationId=requestAnimationFrame(tick);
+  }
+  function restart() {pause(true);elapsed=0;status('Restarted at launch.');render();$('announcer').textContent='Simulation restarted at launch.';}
+  function step() {if(running) pause(true);elapsed=Math.min(values.T,elapsed+STEP);status(elapsed>=values.T?'Landed at x = '+fmt(values.R)+' m.':'Advanced by 0.10 seconds.',elapsed>=values.T?'land':'ready');render();$('announcer').textContent='Time '+fmt(elapsed)+' seconds. x = '+fmt(position(elapsed).x)+' meters, y = '+fmt(position(elapsed).y)+' meters.';}
+  function refreshParameters() {
+    if (values) pause(true); // Initial setup has no computed trajectory yet.
+    params={speed:Number(speedRange.value),angle:Number(angleRange.value),gravity:Number(gravityRange.value)};
+    values=compute(params);elapsed=0;
+    $('speedOutput').textContent=params.speed.toFixed(1)+' m/s';
+    $('angleOutput').textContent=params.angle+'°';
+    $('gravityOutput').textContent=params.gravity.toFixed(2)+' m/s²';
+    speedRange.setAttribute('aria-valuetext',params.speed+' meters per second');
+    angleRange.setAttribute('aria-valuetext',params.angle+' degrees');
+    gravityRange.setAttribute('aria-valuetext',params.gravity.toFixed(2)+' meters per second squared');
+    status('New prediction ready. Press Play or Step.');
+    resetQuiz(false);
+    render();
+  }
+  function setFeedback(id,correct,content) {
+    const el=$('feedback'+id);el.hidden=false;el.className='feedback '+(correct?'good':'bad');
+    el.textContent=(correct?'✓ Correct. ':'✗ Not quite. ')+content;
+    answers['q'+id.slice(1)]=correct;
+    updateScore();
+  }
+  function updateScore() {
+    const correct=Object.values(answers).filter(x=>x===true).length;
+    $('quizScore').textContent=correct+' / 3 correct';
+  }
+  function selected(name) {const el=document.querySelector('input[name="'+name+'"]:checked');return el?el.value:null;}
+  function check1() {
+    const a=selected('q1');
+    if(!a){$('feedbackQ1').hidden=false;$('feedbackQ1').className='feedback bad';$('feedbackQ1').textContent='Choose one option, then check your answer.';return;}
+    setFeedback('Q1',a==='zero','At the apex, vᵧ = v₀ sin(θ) − gt = 0 m/s. Horizontal velocity vₓ = '+fmt(values.vx)+' m/s is still nonzero.');
+  }
+  function check2() {
+    const a=selected('q2');
+    if(!a){$('feedbackQ2').hidden=false;$('feedbackQ2').className='feedback bad';$('feedbackQ2').textContent='Choose one option, then check your answer.';return;}
+    setFeedback('Q2',a==='half','Because R = v₀² sin(2θ) / g, doubling g halves R: '+fmt(values.R)+' m becomes '+fmt(values.R/2)+' m (with speed and angle unchanged).');
+  }
+  function check3() {
+    const raw=$('rangeGuess').value.trim();
+    if(raw==='' || !Number.isFinite(Number(raw))) {$('feedbackQ3').hidden=false;$('feedbackQ3').className='feedback bad';$('feedbackQ3').textContent='Enter a finite numerical prediction in meters.';return;}
+    const given=Number(raw), tolerance=Math.max(.15,values.R*.01);
+    setFeedback('Q3',Math.abs(given-values.R)<=tolerance,'Using R = v₀² sin(2θ) / g, the landing position is x = '+fmt(values.R)+' m. Accepted tolerance: ±'+fmt(tolerance)+' m.');
+  }
+  function resetQuiz(announce=true) {
+    document.querySelectorAll('input[name=q1],input[name=q2]').forEach(e=>e.checked=false);
+    $('rangeGuess').value='';
+    for(const id of ['Q1','Q2','Q3']) {$('feedback'+id).hidden=true;$('feedback'+id).textContent='';$('feedback'+id).className='feedback';}
+    answers={q1:null,q2:null,q3:null};updateScore();
+    if(announce)$('announcer').textContent='Practice answers cleared.';
+  }
+  $('playBtn').addEventListener('click',play);
+  $('pauseBtn').addEventListener('click',()=>pause());
+  $('restartBtn').addEventListener('click',restart);
+  $('stepBtn').addEventListener('click',step);
+  $('timeRange').addEventListener('input',e=>{const scrub=Math.max(0,Number(e.target.value));pause(true);elapsed=(values.T-scrub<=0.0011)?values.T:Math.min(values.T,scrub);status(elapsed>=values.T?'Landed at predicted range.':'Scrubbed to t = '+fmt(elapsed)+' s.',elapsed>=values.T?'land':'ready');render();});
+  [speedRange,angleRange,gravityRange].forEach(e=>e.addEventListener('input',refreshParameters));
+  $('checkQ1').addEventListener('click',check1);$('checkQ2').addEventListener('click',check2);$('checkQ3').addEventListener('click',check3);
+  $('rangeGuess').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check3();}});
+  $('resetQuiz').addEventListener('click',()=>resetQuiz());
+  document.addEventListener('keydown',e=>{
+    const target=e.target;
+    if(e.code==='Space' && !e.repeat && !(target instanceof HTMLInputElement) && !(target instanceof HTMLButtonElement) && !(target instanceof HTMLSelectElement) && !(target instanceof HTMLTextAreaElement)) {
+      e.preventDefault();running?pause():play();
+    }
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden && running) pause();});
+  // Public, read-only test hook: useful for checking calculation consistency in a browser console.
+  window.ProjectileLab = Object.freeze({
+    getState: () => ({parameters:{...params},...values,time:elapsed,position:position(elapsed),running}),
+    calculate: (speed,angle,gravity) => {
+      if(![speed,angle,gravity].every(Number.isFinite)||speed<=0||gravity<=0||angle<=0||angle>=90) throw new RangeError('Use positive speed and gravity; angle must be between 0° and 90°.');
+      return compute({speed,angle,gravity});
+    }
+  });
+  refreshParameters();
+})();
+</script>
+</body>
+</html>
